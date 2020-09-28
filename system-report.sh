@@ -1,6 +1,6 @@
 #! /bin/bash
 #Author : Tarun Kumar
-#Date : - 28 Sep, 2020
+#Date : - 25 Sep, 2020
 
 #Checking if this script is being executed as ROOT. For maintaining proper directory structure, this script must be run from a root user.
 if [ $EUID != 0 ]
@@ -10,9 +10,9 @@ then
 fi
 #Declaring variables
 #set -x
-os_name=`uname -v | awk {'print$1'} | cut -f2 -d'-'`
+os_name=`cat /etc/os-release | grep "^NAME" | cut -d '"' -f2`
 upt=`uptime -p | cut -f 1 -d ' ' --complement`
-ip_add=`ifconfig | grep "inet" | head -1 | awk {'print$2'} | cut -f2 -d:`
+ip_add=`hostname -I | awk '{print $1}'`
 num_proc=`ps -ef | wc -l`
 root_fs_pc=`df -h /dev/nvme0n1p1 | tail -1 | awk '{print$5}'`
 total_root_size=`df -h /dev/nvme0n1p1 | tail -1 | awk '{print$2}'`
@@ -23,18 +23,14 @@ load_avg15=`cat /proc/loadavg  | awk {'print$3'}`
 ram_usage=`free -m | head -2 | tail -1 | awk {'print$3'}`
 ram_total=`free -m | head -2 | tail -1 | awk {'print$2'}`
 inode=`df -i / | head -2 | tail -1 | awk {'print$5'}`
-os_version=`uname -v | cut -f2 -d'~' | awk {'print$1'} | cut -f1 -d'-' | cut -c 1-5`
-#Creating a directory if it doesn't exist to store reports first, for easy maintenance.
-if [ -d ${HOME}/health_reports ]
+os_version=`cat /etc/os-release | grep "^VERSION" | cut -d '"' -f2 | head -1`
+#Checking if file exists, removing if exists.
+if [ -f /usr/share/nginx/html/health.html ]
 then
-  rm -rf ${HOME}/health_reports
+  rm -rf /usr/share/nginx/html/health.html
 fi
 
-if [ ! -d ${HOME}/health_reports ]
-then
-  mkdir ${HOME}/health_reports
-fi
-html="${HOME}/health_reports/Server-Health-Report-`hostname`.html"
+html="/usr/share/nginx/html/health.html"
 for i in `ls /home`; do sudo du -sh /home/$i/* | sort -nr | grep G; done > /tmp/dir.txt
 #Generating HTML file
 echo "<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">" >> $html
@@ -96,4 +92,4 @@ echo "</tbody>" >> $html
 echo "</table>" >> $html
 echo "</body>" >> $html
 echo "</html>" >> $html
-echo "Report has been generated in ${HOME}/health_reports with file-name = $html."
+echo "Report has been generated at /usr/share/nginx/html/health.html"
